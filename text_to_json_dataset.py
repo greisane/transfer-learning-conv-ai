@@ -14,18 +14,23 @@ def convert_text_dataset_to_json(
     """
     Converts a plaintext conversations file into a json formatted like the personachat dataset.
     The conversations should follow the following format:
+    001 personality
+    002 personality
+    003 personality
+    004 personality
+    ====== separator
     <<< query
     >>> reply
     <<< query
     >>> reply
     [...]
-    ====== Conversation separator
+    ====== separator
     <<< query
     >>> reply
     [...]
     """
 
-    # Gather candidates
+    # Read personality and gather candidates
     next_candidate = 0
     all_candidates = []
     with open(text_dataset_path, 'r') as fin:
@@ -39,18 +44,24 @@ def convert_text_dataset_to_json(
 
     # Create conversations
     conversations = []
+    personality = []
     with open(text_dataset_path, 'r') as fin:
-        conversation = {"personality": [], "utterances": []}
+        conversation = {"personality": personality[:], "utterances": []}
         history = []
 
         for line in fin:
             threechars = line[:3]
             line = preprocess_utterance(line[3:])
-            if threechars == "===":
+            if threechars.isdigit():
+                n = int(threechars)
+                personality[len(personality):n] = repeat("", n - len(personality))
+                personality[n - 1] = line
+                conversation["personality"] = personality[:]
+            elif threechars == "===":
                 # Conversation delimiter. Finalize conversation
                 if conversation["utterances"]:
                     conversations.append(conversation)
-                conversation = {"personality": [], "utterances": []}
+                conversation = {"personality": personality[:], "utterances": []}
                 history = []
             elif threechars == "<<<":
                 # Other speaker
@@ -82,7 +93,12 @@ def convert_text_dataset_to_json(
             datasets = json.load(fin)
     except:
         datasets = {"train": [], "valid": []}
-    datasets[dataset_name] = conversations
+    dataset = datasets[dataset_name]
+
+    new_dataset = [conv for conv in dataset if conv["personality"] != personality]
+    print(f"Dropped {len(dataset) - len(new_dataset)} conversations with the same personality")
+    new_dataset.extend(conversations)
+    datasets[dataset_name] = new_dataset
 
     print(f"""Saving "{dataset_name}" dataset to {json_dataset_path}""")
     with open(json_dataset_path, 'w') as fout:
