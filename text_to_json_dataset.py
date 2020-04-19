@@ -83,7 +83,7 @@ def convert_text_dataset_to_json(
         if conversation["utterances"]:
             dataset.append(conversation)
 
-    print(f"Saving to {json_dataset_path}")
+    print(f"Saving to '{dataset_name}' dataset in {json_dataset_path}")
     with open(json_dataset_path, 'w') as fout:
         json.dump(datasets, fout, indent=4, sort_keys=True)
 
