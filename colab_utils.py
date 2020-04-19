@@ -48,7 +48,7 @@ def copy_checkpoint_to_gdrive(checkpoint_path, make_tar=True):
 
     print(f"Copied {checkpoint_path} to {drive_path}")
 
-def copy_checkpoint_from_gdrive(folder_or_tar_name, checkpoints_path="/content/runs"):
+def copy_checkpoint_from_gdrive(folder_or_tar_name, checkpoints_path="/runs"):
     """Copies the checkpoint folder from a mounted Google Drive."""
     assert_mounted()
     folder_name = os.path.splitext(folder_or_tar_name)[0]
