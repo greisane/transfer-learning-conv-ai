@@ -19,16 +19,21 @@ def preprocess_utterance(text):
     parts = re.split(r"([!?.,:;])", text.lower())
     return ' '.join(s.strip() for s in parts if s)
 
-def download_pretrained_model():
+def download_pretrained_model(destination_path=None):
     """ Download and extract finetuned model from S3 """
     from transformers import cached_path
     resolved_archive_file = cached_path(HF_FINETUNED_MODEL)
-    tempdir = tempfile.mkdtemp()
-    logger.info("extracting archive file {} to temp dir {}".format(resolved_archive_file, tempdir))
-    with tarfile.open(resolved_archive_file, 'r:gz') as archive:
-        archive.extractall(tempdir)
-    return tempdir
-
+    if not destination_path:
+        destination_path = tempfile.mkdtemp()
+        logger.info("extracting archive file {} to temp dir {}".format(resolved_archive_file, destination_path))
+        with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+            archive.extractall(tempdir)
+    elif not os.path.isdir(destination_path):
+        os.makedirs(destination_path)
+        logger.info("extracting archive file {} to {}".format(resolved_archive_file, destination_path))
+        with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+            archive.extractall(destination_path)
+    return destination_path
 
 def get_dataset(tokenizer, dataset_path, dataset_cache):
     """ Get tokenized PERSONACHAT dataset from S3 or cache."""
