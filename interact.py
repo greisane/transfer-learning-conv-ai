@@ -135,7 +135,6 @@ def run():
         dataset = get_dataset(tokenizer, args.dataset_path, args.dataset_cache)
         personalities = [dialog["personality"] for dataset in dataset.values() for dialog in dataset]
         personality = random.choice(personalities)
-        logger.info("Selected personality: %s", tokenizer.decode(chain(*personality)))
     else:
         def tokenize(obj):
             if isinstance(obj, str):
@@ -151,13 +150,13 @@ def run():
                 if len(personality) >= 4:
                     break
         personality = tokenize(personality)
+    logger.info("Selected personality: %s", tokenizer.decode(chain(*personality)))
 
     history = []
     while True:
         raw_text = input(">>> ")
-        while not raw_text:
-            print('Prompt should not be empty!')
-            raw_text = input(">>> ")
+        if not raw_text:
+            break
         history.append(tokenizer.encode(raw_text))
         with torch.no_grad():
             out_ids = sample_sequence(personality, history, tokenizer, model, args)
