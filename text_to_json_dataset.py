@@ -25,15 +25,6 @@ def convert_text_dataset_to_json(
     [...]
     """
 
-    # Load existing json
-    try:
-        with open(json_dataset_path, 'r') as fin:
-            datasets = json.load(fin)
-    except:
-        datasets = {"train": [], "valid": []}
-    dataset = datasets[dataset_name]
-    dataset.clear()
-
     # Gather candidates
     next_candidate = 0
     all_candidates = []
@@ -46,6 +37,8 @@ def convert_text_dataset_to_json(
     random.seed(1234)
     random.shuffle(all_candidates)
 
+    # Create conversations
+    conversations = []
     with open(text_dataset_path, 'r') as fin:
         conversation = {"personality": [], "utterances": []}
         history = []
@@ -56,8 +49,8 @@ def convert_text_dataset_to_json(
             if threechars == "===":
                 # Conversation delimiter. Finalize conversation
                 if conversation["utterances"]:
-                    dataset.append(conversation)
-                conversation["utterances"].clear()
+                    conversations.append(conversation)
+                conversation = {"personality": [], "utterances": []}
                 history = []
             elif threechars == "<<<":
                 # Other speaker
@@ -81,9 +74,17 @@ def convert_text_dataset_to_json(
 
         # Finalize last conversation
         if conversation["utterances"]:
-            dataset.append(conversation)
+            conversations.append(conversation)
 
-    print(f"Saving to '{dataset_name}' dataset in {json_dataset_path}")
+    # Save or resave existing json
+    try:
+        with open(json_dataset_path, 'r') as fin:
+            datasets = json.load(fin)
+    except:
+        datasets = {"train": [], "valid": []}
+    datasets[dataset_name] = conversations
+
+    print(f"""Saving "{dataset_name}" dataset to {json_dataset_path}""")
     with open(json_dataset_path, 'w') as fout:
         json.dump(datasets, fout, indent=4, sort_keys=True)
 
