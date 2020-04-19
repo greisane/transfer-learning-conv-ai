@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 from transformers import OpenAIGPTLMHeadModel, OpenAIGPTTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from train import SPECIAL_TOKENS, build_input_from_segments, add_special_tokens_
-from utils import get_dataset, download_pretrained_model
+from utils import get_dataset, download_pretrained_model, preprocess_utterance
 
 def top_filtering(logits, top_k=0., top_p=0.9, threshold=-float('Inf'), filter_value=-float('Inf')):
     """ Filter a distribution of logits using top-k, top-p (nucleus) and/or threshold filtering
@@ -91,6 +91,7 @@ def run():
     parser = ArgumentParser()
     parser.add_argument("--dataset_path", type=str, default="", help="Path or url of the dataset. If empty download from S3.")
     parser.add_argument("--dataset_cache", type=str, default='./dataset_cache', help="Path or url of the dataset cache")
+    parser.add_argument("--personality_path", type=str, default="", help="Path to a text file, the first 4 lines are read as a personality.")
     parser.add_argument("--model", type=str, default="openai-gpt", help="Model type (openai-gpt or gpt2)", choices=['openai-gpt', 'gpt2'])  # anything besides gpt2 will load openai-gpt
     parser.add_argument("--model_checkpoint", type=str, default="", help="Path, url or short name of the model")
     parser.add_argument("--max_history", type=int, default=2, help="Number of previous utterances to keep in history")
@@ -129,11 +130,27 @@ def run():
     model.to(args.device)
     add_special_tokens_(model, tokenizer)
 
-    logger.info("Sample a personality")
-    dataset = get_dataset(tokenizer, args.dataset_path, args.dataset_cache)
-    personalities = [dialog["personality"] for dataset in dataset.values() for dialog in dataset]
-    personality = random.choice(personalities)
-    logger.info("Selected personality: %s", tokenizer.decode(chain(*personality)))
+    if not args.personality_path:
+        logger.info("Sample a personality")
+        dataset = get_dataset(tokenizer, args.dataset_path, args.dataset_cache)
+        personalities = [dialog["personality"] for dataset in dataset.values() for dialog in dataset]
+        personality = random.choice(personalities)
+        logger.info("Selected personality: %s", tokenizer.decode(chain(*personality)))
+    else:
+        def tokenize(obj):
+            if isinstance(obj, str):
+                return tokenizer.convert_tokens_to_ids(tokenizer.tokenize(obj))
+            return list(tokenize(o) for o in obj)
+        personality = []
+        with open(args.personality_path, 'r') as fin:
+            for line in fin:
+                if line[:3].isdigit():
+                    line = line[3:]
+                line = preprocess_utterance(line)
+                personality.append(line)
+                if len(personality) >= 4:
+                    break
+        personality = tokenize(personality)
 
     history = []
     while True:
