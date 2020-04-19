@@ -80,7 +80,7 @@ def get_data_loaders(args, tokenizer):
             num_candidates = min(args.num_candidates, num_candidates)
         for dialog in dataset:
             persona = dialog["personality"].copy()
-            for _ in range(min(args.personality_permutations, len(persona), 1)):
+            for _ in range(max(1, min(args.personality_permutations, len(persona)))):
                 for utterance in dialog["utterances"]:
                     history = utterance["history"][-(2*args.max_history+1):]
                     for j, candidate in enumerate(utterance["candidates"][-num_candidates:]):

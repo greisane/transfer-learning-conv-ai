@@ -83,6 +83,8 @@ def convert_text_dataset_to_json(
     except:
         datasets = {"train": [], "valid": []}
     datasets[dataset_name] = conversations
+    num_candidates = len(datasets["valid"][0]["utterances"][0]["candidates"])
+    print(num_candidates)
 
     print(f"""Saving "{dataset_name}" dataset to {json_dataset_path}""")
     with open(json_dataset_path, 'w') as fout:
