@@ -40,15 +40,17 @@ def copy_checkpoint_to_gdrive(checkpoint_path, make_tar=True):
         shutil.copytree(checkpoint_path, drive_path)
     else:
         tar_path = checkpoint_path + ".tar"
-        drive_path = "/content/drive/My Drive/" + folder_name + ".tar"
         # Reference: https://stackoverflow.com/a/17081026
         with tarfile.open(tar_path, 'w') as tar:
             tar.add(checkpoint_path)
+
+        drive_path = "/content/drive/My Drive/" + folder_name + ".tar"
+        os.makedirs(os.path.dirname(drive_path), exist_ok=True)
         shutil.copyfile(tar_path, drive_path)
 
     print(f"Copied {checkpoint_path} to {drive_path}")
 
-def copy_checkpoint_from_gdrive(folder_or_tar_name, checkpoints_path="/runs"):
+def copy_checkpoint_from_gdrive(folder_or_tar_name, checkpoints_path="/content/runs"):
     """Copies the checkpoint folder from a mounted Google Drive."""
     assert_mounted()
     folder_name = os.path.splitext(folder_or_tar_name)[0]
@@ -59,7 +61,9 @@ def copy_checkpoint_from_gdrive(folder_or_tar_name, checkpoints_path="/runs"):
         shutil.copytree(drive_path, checkpoint_path)
     else:
         tar_path = checkpoint_path + ".tar"
+        os.makedirs(os.path.dirname(tar_path), exist_ok=True)
         shutil.copyfile(drive_path, tar_path)
+
         with tarfile.open(tar_path, 'r') as tar:
             tar.extractall()
 
